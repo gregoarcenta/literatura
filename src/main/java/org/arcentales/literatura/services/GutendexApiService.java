@@ -1,58 +1,48 @@
 package org.arcentales.literatura.services;
-
+import org.arcentales.literatura.models.BookData;
+import org.arcentales.literatura.models.GutendexResponse;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.List;
 
 @Service
 public class GutendexApiService {
 
-    private static final String GUTENDEX_BASE_URL = "https://gutendex.com/books";
-    private final HttpClient client;
+    private static final String BASE_URL = "https://gutendex.com/books/";
 
-    public GutendexApiService() {
-        this.client = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_2)
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .build();
+    private final HttpClient client = HttpClient.newBuilder()
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .build();
+
+    private final ObjectMapper mapper = new ObjectMapper();
+
+    public List<BookData> getBooks() {
+        return get(BASE_URL, GutendexResponse.class).results();
     }
 
-    public String makeRequest(String url) {
+    private <T> T get(String url, Class<T> type) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .GET()
-                    .header("Accept", "application/json")
                     .build();
 
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response =
+                    client.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                return response.body();
-            } else {
-                throw new RuntimeException("Error en la respuesta de la API: " + response.statusCode());
+                return mapper.readValue(response.body(), type);
             }
-        } catch (IOException | InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("Error al realizar la petición: " + e.getMessage(), e);
+
+            throw new RuntimeException("HTTP error: " + response.statusCode());
+
+        } catch (Exception e) {
+            throw new RuntimeException("API call failed", e);
         }
-    }
-
-    public String getBooks() {
-        return makeRequest(GUTENDEX_BASE_URL);
-    }
-
-    public String getBooksBySearch(String query) {
-        String url = GUTENDEX_BASE_URL + "?search=" + query;
-        return makeRequest(url);
-    }
-
-    public String getBookById(Long id) {
-        String url = GUTENDEX_BASE_URL + "/" + id;
-        return makeRequest(url);
     }
 }
