@@ -22,10 +22,14 @@ public class GutendexApiService {
     private final ObjectMapper mapper = new ObjectMapper();
 
     public List<BookData> getBooks() {
-        return get(BASE_URL, GutendexResponse.class).results();
+        return get(BASE_URL).results();
     }
 
-    private <T> T get(String url, Class<T> type) {
+    public List<BookData> search(String query) {
+        return get(BASE_URL + "?search=" + query).results();
+    }
+
+    private GutendexResponse get(String url) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
@@ -35,14 +39,14 @@ public class GutendexApiService {
             HttpResponse<String> response =
                     client.send(request, HttpResponse.BodyHandlers.ofString());
 
-            if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                return mapper.readValue(response.body(), type);
+            if (response.statusCode() >= 300) {
+                throw new RuntimeException("HTTP error " + response.statusCode());
             }
 
-            throw new RuntimeException("HTTP error: " + response.statusCode());
+            return mapper.readValue(response.body(), GutendexResponse.class);
 
         } catch (Exception e) {
-            throw new RuntimeException("API call failed", e);
+            throw new RuntimeException("Gutendex API error", e);
         }
     }
 }

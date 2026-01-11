@@ -1,6 +1,6 @@
 package org.arcentales.literatura;
 
-import org.arcentales.literatura.services.GutendexApiService;
+import org.arcentales.literatura.services.LibraryService;
 import org.arcentales.literatura.utils.ConsoleMenu;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -11,7 +11,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class LiteraturaApplication implements CommandLineRunner {
 
     @Autowired
-    GutendexApiService service;
+    LibraryService service;
 
     public static void main(String[] args) {
         SpringApplication.run(LiteraturaApplication.class, args);
